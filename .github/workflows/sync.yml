@@ -1,0 +1,45 @@
+---
+name: Synchronize release from upstream
+
+env:
+  UPSTREAM_REPO:
+
+on:
+  watch:
+  schedule:
+    - cron: "0 13 * * *"
+
+jobs:
+  job:
+    name: Synchronize version if upstream have a new release
+    runs-on: ubuntu-latest
+
+    steps:
+      - id: get-release
+        name: Get latest release version from upstream
+        uses: pozetroninc/github-action-get-latest-release@v0.5.0
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          excludes: prerelease, draft
+
+      - id: checkout
+        name: Checkout current repository
+        uses: actions/checkout@v2
+
+      - id: get-versions
+        name: Get versions from local repository and upstream repository
+        run: |
+          echo ::set-env name=LOCAL_VERSION::$(cat VERSION)
+          echo ::set-env name=UPSTREAM_VERSION::$(echo ${{ steps.get-release.outputs.release }})
+
+      - id: update
+        name: Compare versions, synchronize if the upstream version is different from the local version
+        if: ${{ env.LOCAL_VERSION != env.UPSTREAM_VERSION }}
+        run: |
+          echo -n $UPSTREAM_VERSION > VERSION
+          wget https://github.com/$UPSTREAM_REPO/archive/$UPSTREAM_VERSION.tar.gz -qO latest.tar.gz
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add latest.tar.gz
+          git commit -am "update version and source archive"
+          git push -v --progress
