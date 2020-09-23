@@ -1,5 +1,5 @@
 function get_version {
-    output "$(cat VERSION)"
+    output "$(cat VERSION | sed 's|^v||g')"
 }
 
 function get_date {
