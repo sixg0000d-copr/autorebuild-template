@@ -30,7 +30,7 @@ jobs:
         name: Get versions from local repository and upstream repository
         run: |
           echo ::set-env name=LOCAL_VERSION::$(cat VERSION)
-          echo ::set-env name=UPSTREAM_VERSION::$(echo ${{ steps.get-release.outputs.release }})
+          echo ::set-env name=UPSTREAM_VERSION::${{ steps.get-release.outputs.release }}
 
       - id: update
         name: Compare versions, synchronize if the upstream version is different from the local version
