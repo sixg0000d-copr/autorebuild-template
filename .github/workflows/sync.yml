@@ -1,8 +1,9 @@
 ---
-name: Synchronize release from upstream
+name: Sync release version
 
 env:
-  UPSTREAM_REPO:
+  # Upstream repo which you want to follow
+  UPSTREAM_REPO: sixg0000d-copr/autorebuild-template
 
 on:
   watch:
@@ -11,35 +12,34 @@ on:
 
 jobs:
   job:
-    name: Synchronize version if upstream have a new release
+    name: Sync version from upstream
     runs-on: ubuntu-latest
 
     steps:
       - id: get-release
         name: Get latest release version from upstream
-        uses: pozetroninc/github-action-get-latest-release@v0.5.0
+        uses: pozetroninc/github-action-get-latest-release@master
         with:
           repository: ${{ env.UPSTREAM_REPO }}
           excludes: prerelease, draft
 
       - id: checkout
         name: Checkout current repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@master
 
       - id: get-versions
-        name: Get versions from local repository and upstream repository
+        name: Get versions from local repository and set-env
         run: |
           echo "LOCAL_VERSION=$(cat VERSION)" >> $GITHUB_ENV
           echo "UPSTREAM_VERSION=${{ steps.get-release.outputs.release }}" >> $GITHUB_ENV
 
       - id: update
-        name: Compare versions, synchronize if the upstream version is different from the local version
+        name: Compare versions, update LOCAL_VERSION if LOCAL_VERSION is not equals to UPSTREAM_VERSION
         if: ${{ env.LOCAL_VERSION != env.UPSTREAM_VERSION }}
         run: |
           echo -n $UPSTREAM_VERSION > VERSION
-          wget https://github.com/$UPSTREAM_REPO/archive/$UPSTREAM_VERSION.tar.gz -qO latest.tar.gz
+          git add VERSION
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add latest.tar.gz
-          git commit -am "update to $UPSTREAM_VERSION from $LOCAL_VERSION"
+          git commit -m "update to $UPSTREAM_VERSION from $LOCAL_VERSION"
           git push -v --progress
