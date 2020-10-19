@@ -1,7 +1,0 @@
-function get_version {
-    output "$(cat VERSION | sed 's|^v||g')"
-}
-
-function get_date {
-    output "$(LC_ALL=en_US.UTF-8 date +'%a %b %d %Y')"
-}

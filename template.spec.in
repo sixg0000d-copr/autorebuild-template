@@ -1,5 +1,5 @@
 %global forgeurl    
-Version:            {{{ get_version }}}
+Version:            @VERSION@
 %global tag         %{version}
 
 %forgemeta
@@ -10,34 +10,22 @@ Summary:
 
 License:        
 URL:            %{forgeurl}
-Source0:        %{archiveurl}#/latest.tar.gz
+Source0:        %{forgesource}
 
 BuildRequires:  
 Requires:       
 
 %description
 
-
 %prep
 %forgesetup
 
-
 %build
-%configure
-%make_build
-
 
 %install
-rm -rf $RPM_BUILD_ROOT
-%make_install
-
 
 %files
 %license add-license-file-here
 %doc add-docs-here
 
-
-
 %changelog
-* {{{ get_date }}} YOURNAME <YOUR@EMAIL> - {{{ get_version }}}-1
-- Make spec file automatically
