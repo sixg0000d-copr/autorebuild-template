@@ -1,12 +1,34 @@
-VERSION := $(shell cat $(dir $(spec))VERSION)
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MAKEFILE_DIR_PATH := $(dir $(MAKEFILE_PATH))
+export REPO_ROOT := $(realpath $(MAKEFILE_DIR_PATH)/..)
 
-$(spec): $(spec).in
-	sed "s|@VERSION@|$(VERSION)|g" $(spec).in > $(spec)
+VERSION := $(shell cat $(REPO_ROOT)/VERSION)
 
-srpm: $(spec)
+SPEC := $(or $(spec), $(REPO_ROOT)/template.spec)
+OUTDIR := $(or $(outdir), $(REPO_ROOT))
+
+default: srpm
+
+HAS_GIT := $(shell command -v git 2>/dev/null)
+ifndef HAS_GIT
+git-core:
+	dnf -y install git-core
+else
+git-core:
+endif
+
+$(SPEC): $(SPEC).in
+	sed "s|@VERSION@|$(VERSION)|g" $(SPEC).in > $(SPEC)
+
+spec: $(SPEC)
+
+srpm: spec
 	rpmbuild --undefine "_disable_source_fetch" \
-	         --define "_srcrpmdir $(outdir)" \
+	         --define "_srcrpmdir $(OUTDIR)" \
 	         --rmsource \
-	         -bs $(spec)
+	         -bs $(SPEC)
 
-.PHONY: spec srpm
+clean: git-core
+	git clean -xdf
+
+.PHONY: default git-core spec srpm clean
