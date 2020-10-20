@@ -1,11 +1,12 @@
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-MAKEFILE_DIR_PATH := $(dir $(MAKEFILE_PATH))
-export REPO_ROOT := $(realpath $(MAKEFILE_DIR_PATH)/..)
+DOT_COPR_PATH := $(dir $(MAKEFILE_PATH))
+export REPO_ROOT := $(abspath $(DOT_COPR_PATH)/..)
+export REPO_NAME := $(notdir $(REPO_ROOT))
 
 VERSION := $(shell cat $(REPO_ROOT)/VERSION)
 
-SPEC := $(or $(spec), $(REPO_ROOT)/template.spec)
-OUTDIR := $(or $(outdir), $(REPO_ROOT))
+spec ?= $(REPO_ROOT)/$(REPO_NAME).spec
+outdir ?= $(REPO_ROOT)
 
 default: srpm
 
@@ -17,16 +18,16 @@ else
 git-core:
 endif
 
-$(SPEC): $(SPEC).in
-	sed "s|@VERSION@|$(VERSION)|g" $(SPEC).in > $(SPEC)
+$(spec): $(spec).in
+	sed "s|@VERSION@|$(VERSION)|g" $(spec).in > $(spec)
 
-spec: $(SPEC)
+spec: $(spec)
 
 srpm: spec
 	rpmbuild --undefine "_disable_source_fetch" \
-	         --define "_srcrpmdir $(OUTDIR)" \
+	         --define "_srcrpmdir $(outdir)" \
 	         --rmsource \
-	         -bs $(SPEC)
+	         -bs $(spec)
 
 clean: git-core
 	git clean -xdf
