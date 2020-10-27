@@ -1,35 +1,35 @@
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 DOT_COPR_PATH := $(dir $(MAKEFILE_PATH))
-export REPO_ROOT := $(abspath $(DOT_COPR_PATH)/..)
-export REPO_NAME := $(notdir $(REPO_ROOT))
+PROJECT_REPO_ROOT := $(abspath $(DOT_COPR_PATH)/..)
+PROJECT_NAME := $(notdir $(PROJECT_REPO_ROOT))
+SOURCE_NAME := $(PROJECT_NAME)
 
-VERSION := $(shell cat $(REPO_ROOT)/VERSION)
+spec := $(or $(spec), $(PROJECT_REPO_ROOT)/$(PROJECT_NAME).spec)
+outdir := $(or $(outdir), $(PWD))
 
-spec ?= $(REPO_ROOT)/$(REPO_NAME).spec
-outdir ?= $(REPO_ROOT)
+VERSION := $(shell cat $(PROJECT_REPO_ROOT)/VERSION)
 
 default: srpm
 
-HAS_GIT := $(shell command -v git 2>/dev/null)
-ifndef HAS_GIT
-git-core:
-	dnf -y install git-core
-else
-git-core:
-endif
+spec: $(spec).in
+	sed -e "s|@VERSION@|$(VERSION)|g" $(spec).in > $(spec)
 
-$(spec): $(spec).in
-	sed "s|@VERSION@|$(VERSION)|g" $(spec).in > $(spec)
+source: runtime-deps spec
+	spectool --get-files \
+			 --directory=$(outdir) \
+			 $(spec)
 
-spec: $(spec)
-
-srpm: spec
-	rpmbuild --undefine "_disable_source_fetch" \
+srpm: spec source
+	rpmbuild --define "_sourcedir $(outdir)" \
 	         --define "_srcrpmdir $(outdir)" \
-	         --rmsource \
-	         -bs $(spec)
+			 -bs $(spec)
 
-clean: git-core
-	git clean -xdf
+runtime-deps:
+	dnf install -y "rpmdevtools"
 
-.PHONY: default git-core spec srpm clean
+clean:
+	rm -rf $(spec) \
+	       $(outdir)/$(SOURCE_NAME)-$(VERSION).tar.gz \
+		   $(outdir)/$(PROJECT_NAME)-$(VERSION).rpm
+
+.PHONY: default spec source srpm runtime-deps clean
